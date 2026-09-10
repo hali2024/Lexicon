@@ -382,23 +382,22 @@ async function getReportWindow() {
     return result.rows[0];
   }
 
+  // Window = "yesterday, full local calendar day" in REPORT_TIMEZONE.
+  // This is intentionally independent of the exact wall-clock time the
+  // cron job fires. The previous implementation anchored the window to
+  // whichever side of a precise 07:00 boundary "now" fell on; a few
+  // minutes of scheduler jitter around that boundary could flip the
+  // entire 24h window by a full day, silently excluding the day the
+  // user actually studied and making every report read 0.
   const result = await pool.query(`
     WITH local_clock AS (
       SELECT NOW() AT TIME ZONE $1 AS local_now
-    ), anchor AS (
-      SELECT
-        CASE
-          WHEN local_now >= date_trunc('day', local_now) + INTERVAL '7 hours'
-            THEN date_trunc('day', local_now) + INTERVAL '7 hours'
-          ELSE date_trunc('day', local_now) + INTERVAL '7 hours' - INTERVAL '24 hours'
-        END AS local_end
-      FROM local_clock
     )
     SELECT
-      (local_end - INTERVAL '24 hours') AT TIME ZONE $1 AS start_time,
-      local_end AT TIME ZONE $1 AS end_time,
-      local_end::date AS report_date
-    FROM anchor
+      (date_trunc('day', local_now) - INTERVAL '1 day') AT TIME ZONE $1 AS start_time,
+      date_trunc('day', local_now) AT TIME ZONE $1 AS end_time,
+      (date_trunc('day', local_now) - INTERVAL '1 day')::date AS report_date
+    FROM local_clock
   `, [REPORT_TIMEZONE]);
 
   return result.rows[0];
