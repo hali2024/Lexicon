@@ -1698,23 +1698,25 @@ function speak(text,accent='US'){
   accent=accent==='UK'?'UK':'US';
   const value=String(text).trim(),requestId=++speechRequestId;
   if(speechAudio){speechAudio.pause();speechAudio=null;}
-  const fallback=()=>{
+  const playRemoteAudio=()=>{
     if(requestId!==speechRequestId)return;
-    if(!window.speechSynthesis){showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.');return;}
+    try{
+      const audio=new Audio('/api/pronunciation/audio?word='+encodeURIComponent(value)+'&accent='+accent);
+      speechAudio=audio;audio.onerror=()=>showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.');
+      audio.play().catch(()=>showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.'));
+    }catch{showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.');}
+  };
+  if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
     speechSynthesis.cancel();
     const utterance=new SpeechSynthesisUtterance(value);
     utterance.lang=accent==='UK'?'en-GB':'en-US';
-    const voice=speechSynthesis.getVoices().find(v=>v.lang.replace('_','-')===utterance.lang);
+    const voice=speechSynthesis.getVoices().find(v=>v.lang.replace('_','-').toLowerCase()===utterance.lang.toLowerCase());
     if(voice)utterance.voice=voice;
-    utterance.onerror=()=>showToast(LANG==='zh'?'发音播放失败，请检查设备语音设置。':'Unable to play pronunciation. Check your device speech settings.');
+    utterance.onerror=()=>{if(requestId===speechRequestId)playRemoteAudio();};
     speechSynthesis.speak(utterance);
-  };
-  window.speechSynthesis?.cancel();
-  try{
-    const audio=new Audio('/api/pronunciation/audio?word='+encodeURIComponent(value)+'&accent='+accent);
-    speechAudio=audio;audio.onerror=fallback;
-    audio.play().catch(fallback);
-  }catch{fallback();}
+    return;
+  }
+  playRemoteAudio();
 }
 function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
 function speakerBtn(word){
