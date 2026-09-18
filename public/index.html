@@ -1719,7 +1719,7 @@ function speak(text,accent='US'){
 function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
 function speakerBtn(word){
   const safe=escapeHTML(JSON.stringify(String(word)));
-  return ['UK','US'].map(accent=>`<button type="button" class="speaker accentSpeaker" title="${LANG==='zh'?(accent==='UK'?'英式发音':'美式发音'):accent+' pronunciation'}" onclick="event.stopPropagation();speak(${safe},'${accent}')">${LANG==='zh'?(accent==='UK'?'英':'美'):accent} ♫</button>`).join('');
+  return ['UK','US'].map(accent=>`<button type="button" class="speaker accentSpeaker" title="${LANG==='zh'?(accent==='UK'?'英式发音':'美式发音'):accent+' pronunciation'}" onclick="event.stopPropagation();speak(${safe},'${accent}')">${LANG==='zh'?(accent==='UK'?'英':'美'):accent} 🔈</button>`).join('');
 }
 function phoneticMarkup(w){
   return '<span class="phonetic" data-phonetic-word="'+escapeHTML(w.word)+'">'+['UK','US'].map(a=>(LANG==='zh'?(a==='UK'?'英':'美'):a)+' '+escapeHTML(w['phonetic'+a]||(LANG==='zh'?'暂缺':'unavailable'))).join(' · ')+'</span>';

@@ -5,7 +5,7 @@ function parsePronunciations(entries){
   for(const entry of Array.isArray(entries)?entries:[]){
     for(const p of entry.phonetics||[]){
       const url=String(p.audio||'');
-      const accent=/(?:-|_)us(?:[_.-]|$)/i.test(url)?'US':/(?:-|_)(?:uk|gb)(?:[_.-]|$)/i.test(url)?'UK':null;
+      const accent=/(?:-|_)(?:us|au)(?:[_.-]|$)/i.test(url)?'US':/(?:-|_)(?:uk|gb)(?:[_.-]|$)/i.test(url)?'UK':null;
       if(!accent)continue;
       if(p.text&&!result['phonetic'+accent])result['phonetic'+accent]=String(p.text);
       if(/^https:\/\/api\.dictionaryapi\.dev\//.test(url))result['audio'+accent]=url;
@@ -44,7 +44,7 @@ function registerPronunciationRoutes(app){
       if(!audio.ok)throw new Error('Audio unavailable');
       const buffer=Buffer.from(await audio.arrayBuffer());
       if(buffer.length>2000000)throw new Error('Audio too large');
-      res.set({'Content-Type':'audio/mpeg','Cache-Control':'public, max-age=86400'}).send(buffer);
+      res.set({'Content-Type':audio.headers.get('content-type')||'audio/mpeg','Cache-Control':'public, max-age=86400'}).send(buffer);
     }catch{res.status(502).end();}
   });
 }
