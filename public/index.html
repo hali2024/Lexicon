@@ -1701,19 +1701,25 @@ function speak(text,accent='US'){
   const playRemoteAudio=()=>{
     if(requestId!==speechRequestId)return;
     try{
-      const audio=new Audio('/api/pronunciation/audio?word='+encodeURIComponent(value)+'&accent='+accent);
-      speechAudio=audio;audio.onerror=()=>showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.');
-      audio.play().catch(()=>showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.'));
+      const audio=new Audio('/api/pronunciation/tts?word='+encodeURIComponent(value)+'&accent='+accent);
+      speechAudio=audio;audio.onerror=()=>playBrowserSpeech();
+      audio.play().catch(()=>{
+        if(requestId===speechRequestId&&window.speechSynthesis)playBrowserSpeech();
+      });
     }catch{showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.');}
   };
-  if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
+  const playBrowserSpeech=()=>{
+    if(requestId!==speechRequestId||!window.speechSynthesis||!window.SpeechSynthesisUtterance){showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.');return;}
     speechSynthesis.cancel();
     const utterance=new SpeechSynthesisUtterance(value);
     utterance.lang=accent==='UK'?'en-GB':'en-US';
     const voice=speechSynthesis.getVoices().find(v=>v.lang.replace('_','-').toLowerCase()===utterance.lang.toLowerCase());
     if(voice)utterance.voice=voice;
-    utterance.onerror=()=>{if(requestId===speechRequestId)playRemoteAudio();};
+    utterance.onerror=()=>showToast(LANG==='zh'?'发音播放失败，请检查设备语音设置。':'Unable to play pronunciation. Check your device speech settings.');
     speechSynthesis.speak(utterance);
+  };
+  if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
+    playRemoteAudio();
     return;
   }
   playRemoteAudio();

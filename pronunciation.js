@@ -1,5 +1,6 @@
 // Dictionary entries expose regional audio filenames alongside their IPA text.
 const cache=new Map();
+const ttsCache=new Map();
 function parsePronunciations(entries){
   const result={phoneticUK:'',phoneticUS:'',audioUK:'',audioUS:''};
   for(const entry of Array.isArray(entries)?entries:[]){
@@ -33,6 +34,25 @@ function registerPronunciationRoutes(app){
     const word=validate(req,res);if(!word)return;
     try{res.set('Cache-Control','public, max-age=86400').json(await lookupPronunciation(word));}
     catch{res.status(502).json({error:'Pronunciation temporarily unavailable.'});}
+  });
+  app.get('/api/pronunciation/tts',async(req,res)=>{
+    const word=validate(req,res);if(!word)return;
+    const accent=req.query.accent==='UK'?'UK':'US';
+    const key=accent+':'+word.toLowerCase();
+    try{
+      let buffer=ttsCache.get(key);
+      if(!buffer){
+        const voice=accent==='UK'?'en-GB':'en-US';
+        const url='https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+voice+'&q='+encodeURIComponent(word);
+        const audio=await fetch(url,{signal:AbortSignal.timeout(6000),headers:{'User-Agent':'Mozilla/5.0'}});
+        if(!audio.ok)throw new Error('TTS unavailable');
+        buffer=Buffer.from(await audio.arrayBuffer());
+        if(!buffer.length||buffer.length>2000000)throw new Error('TTS audio too large');
+        if(ttsCache.size>=1000)ttsCache.delete(ttsCache.keys().next().value);
+        ttsCache.set(key,buffer);
+      }
+      res.set({'Content-Type':'audio/mpeg','Cache-Control':'public, max-age=86400'}).send(buffer);
+    }catch{res.status(502).end();}
   });
   app.get('/api/pronunciation/audio',async(req,res)=>{
     const word=validate(req,res);if(!word)return;
