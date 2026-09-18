@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -226,7 +226,14 @@ textarea::placeholder{color:#a79f91}
 .drawerIntro{position:relative;color:var(--muted);font-size:12px;font-style:italic;margin:0 0 24px}
 .drawerSection{position:relative;border-top:1px solid var(--line);padding-top:17px;margin-top:17px}
 .drawerSection button{display:block;width:100%;text-align:left;margin:7px 0;background:transparent;color:var(--ink);border-color:var(--line-dark)}
-.drawerSection button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}\n.manualSection{position:relative;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}\n.manualSection h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin:0 0 8px}\n.manualSection p,.manualSection li{font-size:12px;line-height:1.75;color:var(--ink)}\n.manualSection ul{padding-left:19px;margin:7px 0 0}\n.feedbackIntro{position:relative;color:var(--muted);font-size:12px;line-height:1.7}\n.feedbackBox{position:relative;width:100%;min-height:170px;padding:14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);resize:vertical;outline:none;font-size:14px;line-height:1.7}\n.feedbackBox:focus{border-color:var(--accent)}
+.drawerSection button:hover{background:rgba(113,52,59,.06);color:var(--accent);border-color:var(--line-dark)}
+.manualSection{position:relative;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.manualSection h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a7b4e;font-weight:600;margin:0 0 8px}
+.manualSection p,.manualSection li{font-size:12px;line-height:1.75;color:var(--ink)}
+.manualSection ul{padding-left:19px;margin:7px 0 0}
+.feedbackIntro{position:relative;color:var(--muted);font-size:12px;line-height:1.7}
+.feedbackBox{position:relative;width:100%;min-height:170px;padding:14px;border:1px solid var(--line-dark);background:rgba(255,252,245,.55);color:var(--ink);resize:vertical;outline:none;font-size:14px;line-height:1.7}
+.feedbackBox:focus{border-color:var(--accent)}
 .cabinetList{position:relative;display:grid;gap:10px}
 .cabinetItem{border-top:1px solid var(--line);padding:14px 0}
 .cabinetHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
@@ -266,7 +273,10 @@ textarea::placeholder{color:#a79f91}
 }
 
 /* Account / authentication */
-.accountBar{position:absolute;top:0;left:0;display:flex;align-items:flex-start;gap:8px;z-index:4}\n.accountBar.loggedIn{position:absolute;top:auto;left:auto;right:28px;bottom:28px;align-items:flex-end}\n.studyToolsButton{position:absolute;top:46px;right:0;z-index:4;font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}\n.studyToolsButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
+.accountBar{position:absolute;top:0;left:0;display:flex;align-items:flex-start;gap:8px;z-index:4}
+.accountBar.loggedIn{position:absolute;top:auto;left:auto;right:28px;bottom:28px;align-items:flex-end}
+.studyToolsButton{position:absolute;top:46px;right:0;z-index:4;font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border-color:rgba(113,52,59,.35)}
+.studyToolsButton:hover{background:rgba(113,52,59,.07);color:var(--accent);border-color:var(--accent)}
 .accountButton{font-size:10px;padding:7px 10px;background:transparent;color:var(--accent);border:0}
 .accountButton:hover{background:transparent;color:var(--accent);border:0}
 .accountStatus{font-size:10px;color:var(--muted);font-style:italic}
@@ -431,19 +441,20 @@ textarea::placeholder{color:#a79f91}
 @media(max-width:700px){.progressCards{grid-template-columns:repeat(2,1fr)}.progressLists{grid-template-columns:1fr}.bookshelf{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 </style>
+<link rel="stylesheet" href="/studio.css">
 </head>
 <body>
 
 <div class="app">
-  <div class="top">
-    <div class="homeTools">
-      <button id="topCabinetButton" class="utilityButton" type="button" onclick="openCabinet()" data-i18n="cabinetBtn">The Cabinet</button>
-      <button class="utilityButton" type="button" onclick="openSettings()" data-i18n="studyBtn">The Study</button>
-    </div>
-    <div class="accountBar" id="accountBar"></div>
-    <h1 data-i18n="appTitle">The Lexicon</h1>
-    <div class="sub" data-i18n="appSub">A private study of language</div>
-  </div>
+  <header class="top">
+    <button class="brand" onclick="goToStudio()" aria-label="The Lexicon home">The Lexicon <span>❧</span></button>
+    <nav class="homeTools" aria-label="Main navigation">
+      <button class="utilityButton studioNav" onclick="goToStudio()">The Word Studio</button>
+      <button id="topCabinetButton" class="utilityButton" onclick="openCabinet()" data-i18n="cabinetBtn">The Cabinet</button>
+      <button class="utilityButton" onclick="openProgressPage()">The Study</button>
+    </nav>
+    <div class="headerActions"><button class="iconButton" onclick="openCabinetSearch()" aria-label="Search your libraries">⌕</button><button class="iconButton" onclick="openSettings()" aria-label="Open settings">⚙</button><div class="accountBar" id="accountBar"></div></div>
+  </header>
 
   <div id="maintenanceOverlay" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(43,39,35,.72);display:flex;align-items:center;justify-content:center;padding:24px">
     <div style="max-width:420px;background:var(--white,#fbf7ed);border-radius:4px;padding:30px 26px;text-align:center;box-shadow:0 24px 65px rgba(52,38,24,.35)">
@@ -458,40 +469,35 @@ textarea::placeholder{color:#a79f91}
     <div id="reviewBanner" class="reviewBanner hidden"></div>
   </div>
 
-  <div id="homeArea" class="hidden">
+  <main id="homeArea" class="hidden">
+    <div class="pageIntro"><span>A PRIVATE STUDY OF LANGUAGE</span><span id="studioDate"></span></div>
     <div id="importArea">
-      <section id="importPanel" class="panel">
-        <h2 data-i18n="studioTitle">The Word Studio</h2>
-        <p class="hint" data-i18n="studioHint">Enter the words you wish to study.</p>
-        <textarea id="aiWordsInput" style="min-height:130px;font-family:inherit" placeholder="seek
-find
-become"></textarea>
-        <div class="row">
-          <button id="generateAIButton" onclick="generateWithAI()" data-i18n="composeBtn">Compose Library</button>
-        </div>
-        <p id="aiStatus" class="hint" style="margin-bottom:0"></p>
-      </section>
-
-      <section class="panel">
-        <h2 data-i18n="csvTitle">From a CSV</h2>
-        <p class="hint" data-i18n="csvHint">Paste your CSV here</p>
-        <textarea id="csvInput" placeholder="word,part_of_speech,phonetic,cefr,definition,example1,example2,example3,synonyms,antonyms,root_analysis,cognates
-"></textarea>
-        <div class="row">
-          <button onclick="loadCSV()" data-i18n="loadLibraryBtn">Load Library</button>
-          <button class="secondary" onclick="downloadTemplate()" data-i18n="downloadTemplateBtn">Download CSV Template</button>
-          <button class="ghost" onclick="clearLibrary()" data-i18n="clearLibraryBtn">Clear Library & Progress</button>
+      <section id="importPanel" class="panel studioPanel">
+        <div class="studioHero"><div><div class="eyebrow">A LITTLE CURIOSITY, EVERY DAY</div><h1 data-i18n="studioTitle">The Word Studio</h1><p>Discover. Learn. Make it yours.</p></div><blockquote>“A more curious mind,<br>a kinder world.”</blockquote><div class="botanical" aria-hidden="true">❧</div></div>
+        <div class="composer">
+          <div class="composerTabs" role="tablist" aria-label="Create a word library"><button id="aiTab" role="tab" aria-selected="true" aria-controls="aiPane" onclick="selectStudioTab('ai')">✧ &nbsp; Generate with AI</button><button id="csvTab" role="tab" aria-selected="false" aria-controls="csvPane" onclick="selectStudioTab('csv')">Import from CSV</button></div>
+          <div id="aiPane" role="tabpanel" aria-labelledby="aiTab">
+            <label class="srOnly" for="aiWordsInput">Topic or vocabulary words</label><div class="promptRow"><textarea id="aiWordsInput" rows="1" maxlength="1000" placeholder="e.g., Victorian literature, climate change, or advanced adjectives…"></textarea><button id="generateAIButton" onclick="generateWithAI()">Generate Words <span>→</span></button></div>
+            <div class="composerOptions"><label><span class="srOnly">Number of words</span><select id="wordCount"><option value="10">10 words</option><option value="20">20 words</option><option value="30">30 words</option></select></label><label><span class="srOnly">Difficulty</span><select id="wordDifficulty"><option value="">Difficulty · Any</option><option value="A1-A2">Beginner · A1–A2</option><option value="B1-B2">Intermediate · B1–B2</option><option value="C1-C2">Advanced · C1–C2</option></select></label><label><span class="srOnly">Learning goal</span><select id="learningGoal"><option value="everyday">Everyday curiosity</option><option value="academic">Academic reading</option><option value="exam">Exam preparation</option><option value="professional">Professional English</option></select></label><label class="exactWords"><input id="exactWords" type="checkbox"> Use my exact words</label></div>
+            <p id="aiStatus" class="hint" role="status" aria-live="polite"></p>
+          </div>
+          <div id="csvPane" class="hidden" role="tabpanel" aria-labelledby="csvTab"><label class="hint" for="csvInput">Bring your own collection. Paste CSV text or choose a file.</label><textarea id="csvInput" placeholder="word,definition,example"></textarea><div class="row"><button onclick="loadCSV()">Import Library →</button><label class="fileButton">Choose CSV file<input id="csvFile" type="file" accept=".csv,text/csv" onchange="readCSVFile(this)"></label><button class="ghost" onclick="downloadTemplate()">Download template ↓</button></div><p id="csvStatus" class="hint" role="status"></p></div>
         </div>
       </section>
     </div>
-  </div>
+    <div class="dashboardGrid">
+      <section class="panel dashboardCard"><div class="cardHeading"><div class="cardTitle"><span class="sectionIcon">♧</span><div><h2>The Cabinet</h2><p>Your saved word libraries</p></div></div><button class="ghost" onclick="openCabinet()">View all →</button></div><input id="librarySearch" class="hidden" type="search" placeholder="Find a library or word…" aria-label="Search libraries" oninput="renderDashboard()"><div id="dashboardLibraries"></div><button class="newVolume ghost" onclick="newStudioCollection()">+ Create a new collection</button></section>
+      <section class="panel dashboardCard"><div class="cardHeading"><div class="cardTitle"><span class="sectionIcon green">▥</span><div><h2>The Study</h2><p>Your learning journey</p></div></div><button class="ghost" onclick="openProgressPage()">View all →</button></div><div id="dashboardStats" class="dashboardStats"></div><div class="almanacHeading"><span>Activity Almanac <span title="Daily practice from your saved learning records">ⓘ</span></span><span>Last 12 weeks</span></div><div id="dashboardHeatmap" class="dashboardHeatmap" aria-label="Learning activity over the last 12 weeks"></div><div class="heatLegend"><span>Every little word counts.</span><span>Less <i></i><i></i><i></i><i></i> More</span></div><p class="studyQuote">“Consistent study turns words into wisdom.”</p></section>
+    </div>
+    <div class="homeFootnote"><span>✧ &nbsp; Small words. Big horizons.</span><span>Build a richer vocabulary, one day at a time.</span></div>
+  </main>
 
   <div id="appArea" class="hidden">
     <div class="stats" id="statsRow"></div>
     <div id="stage"></div>
   </div>
 
-  <div class="footer">The Lexicon · Developed by H.H</div>
+  <div class="footer">THE LEXICON <span>Words build brighter minds.</span> Developed by H.H</div>
 
   <!-- Account / guest access -->
   <div id="authModal" class="modalLayer hidden" aria-hidden="true" onclick="closeLayer(event,'authModal')">
@@ -917,6 +923,7 @@ become"></textarea>
   <div id="toast" class="toast hidden"></div>
 </div>
 
+<script src="/studio.js"></script>
 <script>
 
 const KEY='englishWordLab_v2';
@@ -931,7 +938,7 @@ let LANG=localStorage.getItem(LANG_KEY)||'en';
 
 /* ---------- theme (day / night) ---------- */
 const THEME_KEY='theLexicon_theme_v1';
-let THEME=localStorage.getItem(THEME_KEY)||'light';
+let THEME=localStorage.getItem(THEME_KEY)||'dark';
 function applyTheme(){
   document.documentElement.classList.toggle('theme-dark',THEME==='dark');
   const btn=document.getElementById('themeToggleBtn');
@@ -1166,6 +1173,7 @@ function getCabinet(){
 }
 function setCabinet(list){
   try{localStorage.setItem(CABINET_KEY,JSON.stringify(list));}catch(e){}
+  renderDashboard();
   // Cabinet changes must also reach the server for logged-in users.
   // This is what makes renamed, edited, removed, and newly-added
   // libraries appear on the user's other devices.
@@ -1445,29 +1453,7 @@ function loadState(){
   updateTopNotices();
 }
 
-function enterLandingHome(){
-  const cabinet=getCabinet();
-  if(cabinet.length){
-    const sorted=[...cabinet].sort((a,b)=>new Date(b.updatedAt||0)-new Date(a.updatedAt||0));
-    const lib=sorted[0];
-    if(lib.progress&&Array.isArray(lib.progress.words)&&lib.progress.words.length){
-      state=JSON.parse(JSON.stringify(lib.progress));
-      state.words=state.words.map(normalizeWordRecord);
-      state.libraryId=lib.id;
-      state.reviewMode=false;
-      state.screen='practiceHub';
-      state.locked=false;
-    }else{
-      state=freshState(lib.words.map(normalizeWordRecord),lib.id,false,'wordToDef');
-      state.screen='practiceHub';
-    }
-    showStudyView();
-    save();
-    render();
-  }else{
-    showHome();
-  }
-}
+function enterLandingHome(){showHome();}
 
 function normalizeWordRecord(w){
   const examples=Array.isArray(w?.examples)?w.examples.map(String).map(x=>x.trim()).filter(Boolean).slice(0,3):(w?.example?[String(w.example).trim()]:[]);
@@ -1490,10 +1476,12 @@ function normalizeWordRecord(w){
 function showHome(){
   flushStudyTime();
   studyClockStartedAt=0;
+  if(state)save();
   state=null;
   showTopHomeTools();
   document.getElementById('homeArea').classList.remove('hidden');
   document.getElementById('importArea').classList.remove('hidden');
+  renderDashboard();
   document.getElementById('appArea').classList.add('hidden');
   renderReviewBanner();
   updateTopNotices();
@@ -1530,11 +1518,12 @@ function parseCSV(text){
     else if((c=='\n'||c=='\r')&&!q){if(c=='\r'&&n=='\n')i++;row.push(cell.trim());cell='';if(row.some(Boolean))rows.push(row);row=[];}
     else cell+=c;
   }
+  if(q){showToast('CSV contains an unclosed quoted field.');return [];}
   row.push(cell.trim());if(row.some(Boolean))rows.push(row);
   if(!rows.length)return [];
   const header=rows[0].map(x=>x.toLowerCase().trim());
   const idx=name=>header.indexOf(name);
-  let wi=idx('word'),pi=idx('part_of_speech')>=0?idx('part_of_speech'):idx('partOfSpeech'),ph=idx('phonetic')>=0?idx('phonetic'):idx('ipa'),ce=idx('cefr')>=0?idx('cefr'):idx('cefr_level'),di=idx('definition'),ei=idx('example'),e1=idx('example1'),e2=idx('example2'),e3=idx('example3'),exs=idx('examples'),
+  let wi=idx('word'),pi=idx('part_of_speech')>=0?idx('part_of_speech'):idx('partofspeech'),ph=idx('phonetic')>=0?idx('phonetic'):idx('ipa'),ce=idx('cefr')>=0?idx('cefr'):idx('cefr_level'),di=idx('definition'),ei=idx('example'),e1=idx('example1'),e2=idx('example2'),e3=idx('example3'),exs=idx('examples'),
       si=idx('synonyms'),ai=idx('antonyms'),ri=idx('root_analysis')>=0?idx('root_analysis'):idx('root'),ci=idx('cognates');
   let dataRows;
   const hasHeader=wi>=0&&di>=0;
@@ -1558,7 +1547,7 @@ function parseCSV(text){
       root:ri>=0?(r[ri]||'').trim():'',
       cognates:ci>=0?splitMulti(r[ci]):[]
     });
-  }).filter(x=>x.word&&x.definition);
+  }).filter(x=>x.word&&x.definition).filter((word,index,words)=>words.findIndex(other=>normalizeWordKey(other.word)===normalizeWordKey(word.word))===index);
 }
 
 function beginNewLibrary(words,source){
@@ -1639,38 +1628,21 @@ function loadCSV(){
 }
 
 async function generateWithAI(){
-  const input=document.getElementById('aiWordsInput');
-  const button=document.getElementById('generateAIButton');
-  const status=document.getElementById('aiStatus');
-
-  // Each line/comma-separated item is one complete word.
-  const words=[...new Set(input.value.split(/[\n,，;；]+/).map(x=>x.trim()).filter(Boolean))];
-  if(!words.length){status.textContent='Please enter at least one English word.';return;}
-  if(words.length>50){status.textContent='Please enter no more than 50 words at a time.';return;}
-
-  button.disabled=true;
-  status.textContent=`Composing ${words.length} word${words.length===1?'':'s'}…`;
+  const input=document.getElementById('aiWordsInput'),button=document.getElementById('generateAIButton'),status=document.getElementById('aiStatus');
+  const prompt=input.value.trim(),exact=document.getElementById('exactWords').checked;
+  if(!prompt){status.textContent='Enter a topic or a list of words to begin.';input.focus();return;}
+  const words=[...new Map(prompt.split(/[\n,，;；]+/).map(x=>x.trim()).filter(Boolean).map(w=>[normalizeWordKey(w),w])).values()];
+  if(exact&&words.length>50){status.textContent='Please enter no more than 50 words.';return;}
+  button.disabled=true;status.textContent='Composing your collection. This may take a moment…';
   try{
-    const response=await fetch('/api/generate',{
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})
-    });
-    let data={};try{data=await response.json();}catch(e){throw new Error('Server returned an invalid response.');}
-    if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
-    if(!Array.isArray(data.words)||!data.words.length)throw new Error('No vocabulary was returned.');
-
-    if(data.words.length!==words.length)throw new Error('The generated library did not contain the expected number of words.');
-
-    const normalized=data.words.map((w,i)=>normalizeWordRecord({...w,word:words[i]})).filter(w=>w.word&&w.definition);
-    if(normalized.length!==words.length)throw new Error('Some words were returned without definitions.');
-
-    status.textContent='';
-    beginNewLibrary(normalized,'ai');
-  }catch(error){
-    console.error('AI generation failed:',error);
-    status.textContent=error.message;
-  }finally{
-    button.disabled=false;
-  }
+    const body=exact?{words}:{prompt,count:Number(document.getElementById('wordCount').value),difficulty:document.getElementById('wordDifficulty').value,goal:document.getElementById('learningGoal').value};
+    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to generate vocabulary.');
+    if(!Array.isArray(data.words)||data.words.length!==(exact?words.length:body.count))throw new Error('The returned collection is incomplete. Please try again.');
+    const normalized=data.words.map(normalizeWordRecord);
+    if(normalized.some(w=>!w.word||!w.definition))throw new Error('Some entries are missing words or definitions.');
+    status.textContent='Your collection is ready.';beginNewLibrary(normalized,'ai');
+  }catch(error){status.textContent=error.message||'Unable to connect. Please try again.';}finally{button.disabled=false;}
 }
 
 function importNewLibrary(){
@@ -2547,11 +2519,9 @@ function renderAccountBar(){
   const el=document.getElementById('accountBar');if(!el)return;
   const drawer=document.querySelector('#settingsDrawer .drawerCard');
   if(accountMode==='account'&&accountUser){
-    if(drawer&&el.parentElement!==drawer)drawer.appendChild(el);
     el.classList.add('loggedIn');
     el.innerHTML=`<span class="accountStatus">${escapeHTML(accountUser.email||'Account')}</span><button class="accountButton" onclick="askLogout()">Log out</button>`;
   }else{
-    if(el.parentElement!==document.querySelector('.top')){document.querySelector('.top')?.appendChild(el);}
     el.classList.remove('loggedIn');
     el.innerHTML='<button class="accountButton" onclick="openAccountChoice()">Log in / Register</button>';
   }
@@ -3420,281 +3390,6 @@ html.lang-zh .profileNote{
   }
 
   setTimeout(applyChineseUI,0);
-})();
-</script>
-
-<style id="lexicon-pet-addon">
-#lexicon-pet-wrap{
-  position:fixed;
-  right:10px;
-  bottom:8px;
-  width:104px;
-  height:112px;
-  z-index:90;
-  pointer-events:none;
-}
-#lexicon-pet-wrap .lexicon-pet-hit{
-  position:absolute;
-  right:0;
-  bottom:0;
-  width:96px;
-  height:104px;
-  pointer-events:auto;
-  cursor:pointer;
-}
-#lexicon-pet-bubble{
-  position:fixed;
-  right:18px;
-  bottom:112px;
-  width:min(190px,42vw);
-  min-height:30px;
-  padding:8px 10px;
-  box-sizing:border-box;
-  background:rgba(251,247,237,.96);
-  border:1px solid rgba(113,52,59,.28);
-  color:#54262c;
-  border-radius:8px;
-  box-shadow:0 8px 24px rgba(52,38,24,.13);
-  font:12px/1.45 Georgia,"Times New Roman",serif;
-  text-align:center;
-  z-index:92;
-  opacity:0;
-  transform:translateY(4px);
-  transition:opacity .22s ease,transform .22s ease;
-  pointer-events:none;
-}
-#lexicon-pet-bubble.show{opacity:1;transform:translateY(0)}
-@media(max-width:600px){
-  #lexicon-pet-wrap{right:4px;bottom:3px;width:78px;height:86px}
-  #lexicon-pet-wrap .lexicon-pet-hit{width:72px;height:80px}
-  #lexicon-pet-bubble{right:8px;bottom:82px;width:160px;font-size:11px}
-}
-</style>
-
-<script>
-(function(){
-  'use strict';
-
-  /* =========================================================
-     THE LEXICON — additive desktop-pet extension
-     This block is intentionally self-contained. It does not
-     replace or edit the original application's functions.
-     ========================================================= */
-
-  const PET_KEY = 'theLexicon_pet_addon_v1';
-
-  const pets = [
-    {
-      id:'tororo',
-      name:'Tororo',
-      model:'https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json',
-      hello:[
-        "Oh. You're here.",
-        "I suppose I can stay for a while.",
-        "Don't get the wrong idea. I was already here."
-      ],
-      poke:[
-        "Hey. Watch the poking.",
-        "Tch. That's enough.",
-        "You really like bothering me, huh?",
-        "I am not blushing. Obviously.",
-        "One more poke and I'm leaving."
-      ],
-      idle:[
-        "Keep studying. I'll be watching.",
-        "Keep going. I am watching your progress.",
-        "Don't expect praise just because you studied."
-      ]
-    },
-    {
-      id:'hijika',
-      name:'Hijika',
-      model:'https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json',
-      hello:[
-        "You're here.",
-        "I noticed.",
-        "Proceed with your study."
-      ],
-      poke:[
-        "Stop.",
-        "Why are you poking me?",
-        "I am not a toy.",
-        "Enough.",
-        "Your persistence is noted."
-      ],
-      idle:[
-        "Continue your practice.",
-        "Finish the next few words. I will still be here.",
-        "I am still here."
-      ]
-    }
-  ];
-
-  let pet = pets[Math.floor(Math.random()*pets.length)];
-  let bubbleTimer = 0;
-  let idleTimer = 0;
-
-  function makeUI(){
-    if(document.getElementById('lexicon-pet-wrap')) return;
-
-    const wrap=document.createElement('div');
-    wrap.id='lexicon-pet-wrap';
-
-    const hit=document.createElement('div');
-    hit.className='lexicon-pet-hit';
-    hit.title=pet.name;
-
-    const bubble=document.createElement('div');
-    bubble.id='lexicon-pet-bubble';
-
-    wrap.appendChild(hit);
-    document.body.appendChild(wrap);
-    document.body.appendChild(bubble);
-
-    hit.addEventListener('click',function(e){
-      e.stopPropagation();
-      speak(pet.poke[Math.floor(Math.random()*pet.poke.length)],3200);
-    });
-
-  }
-
-  function speak(text,duration){
-    const b=document.getElementById('lexicon-pet-bubble');
-    if(!b) return;
-    b.textContent=text;
-    b.classList.add('show');
-    clearTimeout(bubbleTimer);
-    bubbleTimer=setTimeout(()=>b.classList.remove('show'),duration||3200);
-  }
-
-  function startIdle(){
-    clearInterval(idleTimer);
-    idleTimer=setInterval(()=>{
-      if(document.hidden) return;
-      speak(pet.idle[Math.floor(Math.random()*pet.idle.length)],3000);
-    },30000);
-  }
-
-  function loadLive2D(){
-    if(window.L2Dwidget){
-      initLive2D();
-      return;
-    }
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/live2d-widget@3.1.4/lib/L2Dwidget.min.js';
-    s.onload=initLive2D;
-    s.onerror=()=>console.warn('Lexicon pet: Live2D library failed to load.');
-    document.body.appendChild(s);
-  }
-
-  function initLive2D(){
-    if(!window.L2Dwidget) return;
-    try{
-      window.L2Dwidget.init({
-        model:{jsonPath:pet.model},
-        display:{
-          position:'right',
-          width:96,
-          height:104,
-          hOffset:2,
-          vOffset:0,
-          superSample:2
-        },
-        mobile:{show:true,scale:.82},
-        react:{opacityDefault:1,opacityOnHover:1}
-      });
-      setTimeout(bindCanvas,900);
-    }catch(err){
-      console.warn('Lexicon pet: Live2D initialization failed.',err);
-    }
-  }
-
-  function bindCanvas(){
-    const canvas=document.getElementById('live2dcanvas');
-    if(!canvas) return;
-    canvas.style.width='96px';
-    canvas.style.height='104px';
-    canvas.style.right='10px';
-    canvas.style.bottom='8px';
-    canvas.style.zIndex='90';
-    canvas.style.pointerEvents='auto';
-    canvas.style.border='0';
-    canvas.setAttribute('aria-label',pet.name);
-    canvas.title=pet.name;
-    canvas.addEventListener('click',function(e){
-      e.stopPropagation();
-      speak(pet.poke[Math.floor(Math.random()*pet.poke.length)],3200);
-    },true);
-  }
-
-  function keepPetClearOfButtons(){
-    const canvas=document.getElementById('live2dcanvas');
-    const wrap=document.getElementById('lexicon-pet-wrap');
-    if(!canvas || !wrap) return;
-
-    /*
-      Keep the pet in the lower-right corner, but move the whole
-      pet upward when a real button occupies that corner.
-      This is visual collision avoidance only; it never changes
-      the original button positions.
-    */
-    const candidates=[
-      {right:10,bottom:8},
-      {right:10,bottom:78},
-      {right:10,bottom:148},
-      {right:10,bottom:218},
-      {right:10,bottom:288},
-      {right:10,bottom:358},
-      {right:10,bottom:428}
-    ];
-
-    let chosen=candidates[0];
-    const buttons=[...document.querySelectorAll('button')]
-      .filter(b=>b.offsetParent!==null);
-
-    for(const c of candidates){
-      const rect={
-        left:window.innerWidth-c.right-96,
-        right:window.innerWidth-c.right,
-        top:window.innerHeight-c.bottom-104,
-        bottom:window.innerHeight-c.bottom
-      };
-      const collision=buttons.some(b=>{
-        const r=b.getBoundingClientRect();
-        return !(rect.right<r.left || rect.left>r.right || rect.bottom<r.top || rect.top>r.bottom);
-      });
-      if(!collision){chosen=c;break;}
-    }
-
-    canvas.style.right=chosen.right+'px';
-    canvas.style.bottom=chosen.bottom+'px';
-    wrap.style.right=chosen.right+'px';
-    wrap.style.bottom=chosen.bottom+'px';
-    const bubble=document.getElementById('lexicon-pet-bubble');
-    if(bubble) bubble.style.bottom=(chosen.bottom+104)+'px';
-  }
-
-  function boot(){
-    makeUI();
-    loadLive2D();
-    setTimeout(()=>speak(pet.hello[Math.floor(Math.random()*pet.hello.length)],3500),2200);
-    startIdle();
-
-    const observer=new MutationObserver(()=>{
-      clearTimeout(window.__lexiconPetCollisionTimer);
-      window.__lexiconPetCollisionTimer=setTimeout(keepPetClearOfButtons,80);
-    });
-    observer.observe(document.body,{childList:true,subtree:true});
-
-    window.addEventListener('resize',keepPetClearOfButtons);
-    setTimeout(keepPetClearOfButtons,1200);
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',boot,{once:true});
-  }else{
-    boot();
-  }
 })();
 </script>
 

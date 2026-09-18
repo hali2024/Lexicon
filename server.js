@@ -6,6 +6,7 @@ const session = require('express-session');
 const { Pool } = require('pg');
 const pgSession = require('connect-pg-simple')(session);
 
+const { validateGeneration, selectTopicWords, alignVocabulary } = require('./vocabulary');
 const app = express();
 
 app.set('trust proxy', 1);
@@ -2705,6 +2706,7 @@ Do not add extra fields.
     await fetch(
       'https://api.deepseek.com/chat/completions',
       {
+        signal: AbortSignal.timeout(120000),
         method: 'POST',
 
         headers: {
@@ -2717,7 +2719,7 @@ Do not add extra fields.
 
         body: JSON.stringify({
           model:
-            'deepseek-v4-flash',
+            process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
 
           thinking: {
             type: 'disabled'
@@ -2742,7 +2744,7 @@ Do not add extra fields.
           max_tokens:
             one
               ? 2000
-              : 6000,
+              : Math.min(16000, list.length * 550),
 
           stream: false
         })
@@ -2799,7 +2801,7 @@ Do not add extra fields.
   }
 
   result.words =
-    result.words.map(
+    alignVocabulary(result.words, list).map(
       (
         item,
         index
@@ -2968,27 +2970,10 @@ app.post(
   '/api/generate',
   async (req, res) => {
     try {
-      const words =
-        Array.isArray(
-          req.body.words
-        )
-          ? req.body.words
-          : [];
-
-      if (!words.length) {
-        return res.status(400).json({
-          error:
-            'Please provide at least one word'
-        });
-      }
-
-      if (words.length > 50) {
-        return res.status(400).json({
-          error:
-            'Maximum 50 words per request'
-        });
-      }
-
+      let options;
+      try { options = validateGeneration(req.body); }
+      catch (error) { return res.status(400).json({error:error.message}); }
+      const words = options.words || await selectTopicWords(options);
       res.json(
         await deepseek(
           words,
