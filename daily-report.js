@@ -1,8 +1,9 @@
 const { Pool } = require('pg');
 const crypto = require('crypto');
+const {summarizeDay}=require('./study-events');
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
-const REPORT_TIMEZONE = process.env.REPORT_TIMEZONE || 'Asia/Tokyo';
+const REPORT_TIMEZONE = process.env.REPORT_TIMEZONE || 'Asia/Shanghai';
 const REPORT_FROM = process.env.RESEND_FROM || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const TEST_EMAIL = String(process.env.REPORT_TEST_EMAIL || '').trim().toLowerCase();
@@ -438,60 +439,11 @@ async function getStats(userId, startTime, endTime) {
     ORDER BY count DESC
   `, [userId, startTime, endTime]);
 
-  let practiceCount = 0;
-  let learnedCount = 0;
-  let spellingCount = 0;
-  let mistakeCount = 0;
-  const practiceByWord = new Map();
-  const uniqueWords = new Set();
-
-  for (const row of result.rows) {
-    const count = Number(row.count || 0);
-
-    if (row.event_type === 'practice') {
-      practiceCount += count;
-
-      if (row.word) {
-        practiceByWord.set(row.word, count);
-        uniqueWords.add(row.word);
-      }
-
-    } else if (row.event_type === 'learned') {
-      learnedCount += count;
-
-      if (row.word) {
-        uniqueWords.add(row.word);
-      }
-
-    } else if (row.event_type === 'spelling') {
-      spellingCount += count;
-
-      if (row.word) {
-        uniqueWords.add(row.word);
-      }
-
-    } else if (row.event_type === 'mistake') {
-      mistakeCount += count;
-
-      if (row.word) {
-        uniqueWords.add(row.word);
-      }
-    }
-  }
-
-  const topPractice = [...practiceByWord.entries()]
-    .map(([word, count]) => ({ word, count }))
-    .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
-    .slice(0, 10);
-
-  return {
-    practiceCount,
-    learnedCount,
-    spellingCount,
-    mistakeCount,
-    uniqueWords: uniqueWords.size,
-    topPractice
-  };
+  const snapshot=await pool.query('SELECT global_stats FROM user_data WHERE user_id=$1',[userId]);
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:REPORT_TIMEZONE,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(startTime));
+  const part=type=>parts.find(p=>p.type===type).value;
+  const day=part('year')+'-'+part('month')+'-'+part('day');
+  return summarizeDay(result.rows,snapshot.rows[0]?.global_stats||{},day);
 }
 
 async function claimReport(userId, reportDate) {

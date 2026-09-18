@@ -448,11 +448,7 @@ textarea::placeholder{color:#a79f91}
 <div class="app">
   <header class="top">
     <button class="brand" onclick="goToStudio()" aria-label="The Lexicon home">The Lexicon <span>❧</span></button>
-    <nav class="homeTools" aria-label="Main navigation">
-      <button class="utilityButton studioNav" onclick="goToStudio()">The Word Studio</button>
-      <button id="topCabinetButton" class="utilityButton" onclick="openCabinet()" data-i18n="cabinetBtn">The Cabinet</button>
-      <button class="utilityButton" onclick="openProgressPage()">The Study</button>
-    </nav>
+
     <div class="headerActions"><button class="iconButton" onclick="openCabinetSearch()" aria-label="Search your libraries">⌕</button><button class="iconButton" onclick="openSettings()" aria-label="Open settings">⚙</button><div class="accountBar" id="accountBar"></div></div>
   </header>
 
@@ -786,6 +782,7 @@ become"></textarea>
       <p class="modalIntro" data-i18n="recommendedIntro">A shelf of curated vocabulary volumes.</p>
       <div id="recommendedAdminPanel" class="shelfAdmin hidden">
         <div style="font-size:15px;color:#54262c">Admin · Add a volume to the shelf</div>
+        <label class="coverUpload">Cover image (optional)<input id="recommendedCoverInput" type="file" accept="image/png,image/jpeg,image/webp"></label>
         <input id="recommendedNameInput" maxlength="80" placeholder="Library title">
         <textarea id="recommendedDescInput" maxlength="300" placeholder="Short description"></textarea>
         <input id="recommendedFileInput" type="file" accept=".csv,.json,text/csv,application/json" style="margin-top:8px">
@@ -924,6 +921,7 @@ become"></textarea>
 </div>
 
 <script src="/studio.js"></script>
+<script src="/enhancements.js"></script>
 <script>
 
 const KEY='englishWordLab_v2';
@@ -1006,7 +1004,7 @@ const I18N={
     maintenanceTitle:'Under Maintenance',
     maintenanceExpected:'Expected to be back by',
     announcementBoardTitle:'Announcements',
-    wordsEncountered:'Words Encountered',learned:'Words Learned',spelled:'Words Spelled',mistakes:'Total Mistakes',noPractice:'No practice count recorded yet.',noMistakes:'No mistake count recorded yet.',
+    wordsEncountered:'Words Practised',learned:'Words Learned',spelled:'Words Spelled',mistakes:'Total Mistakes',noPractice:'No practice count recorded yet.',noMistakes:'No mistake count recorded yet.',
     noAnnouncements:'No announcements yet.'
   },
   zh:{
@@ -1014,10 +1012,10 @@ const I18N={
     appSub:'',
     cabinetBtn:'词库集',
     cabinetTitle:'词库集',
-    cabinetIntro:'留待日后研习的词书。',
+    cabinetIntro:'管理已保存的词书。',
     recommendedBtn:'推荐词库',
     recommendedTitle:'推荐词库',
-    recommendedIntro:'陈列经遴选的主题词书。',
+    recommendedIntro:'选择感兴趣的推荐词书。',
     progressBtn:'我的学习进度',
     studyBtn:'设置',
     studioTitle:'AI生成',
@@ -1068,7 +1066,7 @@ const I18N={
     maintenanceTitle:'网站维护中',
     maintenanceExpected:'预计恢复时间',
     announcementBoardTitle:'公告板',
-    wordsEncountered:'遇见词汇',learned:'掌握词汇',spelled:'完成拼写',mistakes:'错误总数',noPractice:'尚无学习次数记录。',noMistakes:'尚无错误记录。',
+    wordsEncountered:'已练习单词',learned:'掌握词汇',spelled:'完成拼写',mistakes:'错误总数',noPractice:'尚无学习次数记录。',noMistakes:'尚无错误记录。',
     noAnnouncements:'暂无公告。'
   }
 };
@@ -1127,7 +1125,7 @@ function renderAnnouncementBoard(){
   const locale=LANG==='zh'?'zh-CN':'en-US';
   const latest=list[0];
   const latestHTML=`<div class="announcementLatest"><div class="announcementLatestText">${escapeHTML(latest.content)}</div><div class="hint" style="margin-top:3px">${new Date(latest.createdAt).toLocaleString(locale)}</div></div>`;
-  const items=list.map(a=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div>${escapeHTML(a.content)}</div><div class="hint" style="margin-top:2px">${new Date(a.createdAt).toLocaleString(locale)}</div></div>`).join('');
+  const items=list.slice(1).map(a=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div>${escapeHTML(a.content)}</div><div class="hint" style="margin-top:2px">${new Date(a.createdAt).toLocaleString(locale)}</div></div>`).join('');
   el.innerHTML=`<details class="announcementDetails"><summary><span>${t('announcementBoardTitle')}</span>${latestHTML}</summary><div class="announcementAll">${items}</div></details>`;
 }
 
@@ -1138,6 +1136,9 @@ let globalStats=emptyPersistentStats();
 
 function emptyPersistentStats(){
   return {
+    statsVersion:2,
+    dailyAnswers:{},
+    dailySpelledWords:{},
     learnedWords:[],
     spelledWords:[],
     questionCount:0,
@@ -1227,11 +1228,15 @@ function recordWordEncounter(id){
   if(!wordKey)return;
   const ws=ensureWordStats(wordKey);
   ws.practised=(ws.practised||0)+1;
+  ws.answered=(ws.answered||0)+1;
   if(!ws.firstEncountered)ws.firstEncountered=todayKey();
   const day=todayKey();
   if(!globalStats.dailyWordPractice||typeof globalStats.dailyWordPractice!=='object')globalStats.dailyWordPractice={};
   if(!globalStats.dailyWordPractice[day]||typeof globalStats.dailyWordPractice[day]!=='object')globalStats.dailyWordPractice[day]={};
   globalStats.dailyWordPractice[day][wordKey]=(globalStats.dailyWordPractice[day][wordKey]||0)+1;
+  if(!globalStats.dailyAnswers)globalStats.dailyAnswers={};
+  if(!globalStats.dailyAnswers[day])globalStats.dailyAnswers[day]={};
+  globalStats.dailyAnswers[day][wordKey]=(globalStats.dailyAnswers[day][wordKey]||0)+1;
   saveGlobalStatsOnly();
 }
 
@@ -1257,6 +1262,7 @@ function recordSpellingMastery(){
   globalStats.dailySpellingMastery[day]=(globalStats.dailySpellingMastery[day]||0)+1;
 }
 function recordQuestion(){
+  recordWordEncounter(state.current.id);
   globalStats.questionCount=(globalStats.questionCount||0)+1;
   touchStudyTime();
 }
@@ -1272,6 +1278,10 @@ function flushStudyTime(){
 function recordSpelledWord(id){
   const wordKey=normalizeWordKey(state?.words?.[id]?.word);
   if(!wordKey)return;
+  if(!globalStats.dailySpelledWords)globalStats.dailySpelledWords={};
+  const day=todayKey();
+  if(!globalStats.dailySpelledWords[day])globalStats.dailySpelledWords[day]=[];
+  if(!globalStats.dailySpelledWords[day].includes(wordKey))globalStats.dailySpelledWords[day].push(wordKey);
   if(!Array.isArray(globalStats.spelledWords))globalStats.spelledWords=[];
   if(!globalStats.spelledWords.includes(wordKey))globalStats.spelledWords.push(wordKey);
   saveGlobalStatsOnly();
@@ -1323,6 +1333,9 @@ function loadPersistentStats(legacyState){
   try{parsed=JSON.parse(localStorage.getItem(STATS_KEY)||'null');}catch(e){}
   if(parsed&&typeof parsed==='object'){
     globalStats={
+      statsVersion:2,
+      dailyAnswers:parsed.dailyAnswers||{},
+      dailySpelledWords:parsed.dailySpelledWords||{},
       learnedWords:Array.isArray(parsed.learnedWords)?parsed.learnedWords.map(normalizeWordKey).filter(Boolean):[],
       spelledWords:Array.isArray(parsed.spelledWords)?parsed.spelledWords.map(normalizeWordKey).filter(Boolean):[],
       questionCount:Number(parsed.questionCount||0),
@@ -1461,6 +1474,8 @@ function normalizeWordRecord(w){
     word:String(w?.word||'').trim(),
     partOfSpeech:String(w?.partOfSpeech||'').trim(),
     phonetic:String(w?.phonetic||w?.ipa||'').trim(),
+    phoneticUK:String(w?.phoneticUK||w?.phonetic_uk||'').trim(),
+    phoneticUS:String(w?.phoneticUS||w?.phonetic_us||'').trim(),
     cefr:String(w?.cefr||w?.cefrLevel||'').trim(),
     definition:String(w?.definition||'').trim(),
     example:examples[0]||'',
@@ -1489,7 +1504,6 @@ function showHome(){
 function showStudyView(){
   document.getElementById('homeArea').classList.add('hidden');
   document.getElementById('appArea').classList.remove('hidden');
-  touchStudyTime();
   updateTopNotices();
 }
 function showTopHomeTools(){
@@ -1539,6 +1553,8 @@ function parseCSV(text){
       word:(r[wi]||'').trim(),
       partOfSpeech:pi>=0?(r[pi]||'').trim():'',
       phonetic:ph>=0?(r[ph]||'').trim():'',
+      phoneticUK:idx('phonetic_uk')>=0?r[idx('phonetic_uk')]:'',
+      phoneticUS:idx('phonetic_us')>=0?r[idx('phonetic_us')]:'',
       cefr:ce>=0?(r[ce]||'').trim():'',
       definition:(r[di]||'').trim(),
       examples,example:examples[0]||'',
@@ -1677,33 +1693,36 @@ meticulous,adjective,/məˈtɪkjələs/,C1,very careful about small details,She 
 let speechAudio=null;
 let speechRequestId=0;
 const EDGE_TTS_VOICE='en-US-AriaNeural';
-function speak(text,retry){
+function speak(text,accent='US'){
   if(!text)return;
-  const value=String(text).trim();
-  if(!value)return;
-  const requestId=++speechRequestId;
+  accent=accent==='UK'?'UK':'US';
+  const value=String(text).trim(),requestId=++speechRequestId;
+  if(speechAudio){speechAudio.pause();speechAudio=null;}
+  const fallback=()=>{
+    if(requestId!==speechRequestId)return;
+    if(!window.speechSynthesis){showToast(LANG==='zh'?'发音暂时不可用，请稍后重试。':'Pronunciation unavailable. Please try again.');return;}
+    speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(value);
+    utterance.lang=accent==='UK'?'en-GB':'en-US';
+    const voice=speechSynthesis.getVoices().find(v=>v.lang.replace('_','-')===utterance.lang);
+    if(voice)utterance.voice=voice;
+    utterance.onerror=()=>showToast(LANG==='zh'?'发音播放失败，请检查设备语音设置。':'Unable to play pronunciation. Check your device speech settings.');
+    speechSynthesis.speak(utterance);
+  };
+  window.speechSynthesis?.cancel();
   try{
-    if(speechAudio){speechAudio.pause();speechAudio.currentTime=0;speechAudio.src='';}
-    const audio=new Audio('https://tts.kina.ink/tts?text='+encodeURIComponent(value)+'&voice='+encodeURIComponent(EDGE_TTS_VOICE)+'&rate='+encodeURIComponent('+0%'));
-    speechAudio=audio;
-    audio.preload='auto';
-    audio.volume=1;
-    // A transient network hiccup or an aborted-by-the-next-call error can
-    // make playback silently fail. If this is still the most recent
-    // request (nothing newer has superseded it), retry once before
-    // giving up, so a single flaky request doesn't lose the audio.
-    audio.play().catch(e=>{
-      console.warn('Pronunciation playback failed:',e);
-      if(!retry&&requestId===speechRequestId){
-        setTimeout(()=>{if(requestId===speechRequestId)speak(value,true);},250);
-      }
-    });
-  }catch(e){console.warn('Pronunciation playback failed:',e);}
+    const audio=new Audio('/api/pronunciation/audio?word='+encodeURIComponent(value)+'&accent='+accent);
+    speechAudio=audio;audio.onerror=fallback;
+    audio.play().catch(fallback);
+  }catch{fallback();}
 }
 function safeJSString(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
 function speakerBtn(word){
-  if(!TTS_SUPPORTED)return '';
-  return `<button type="button" class="speaker" title="Play pronunciation" onclick="event.stopPropagation();speak('${safeJSString(word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button>`;
+  const safe=escapeHTML(JSON.stringify(String(word)));
+  return ['UK','US'].map(accent=>`<button type="button" class="speaker accentSpeaker" title="${LANG==='zh'?(accent==='UK'?'英式发音':'美式发音'):accent+' pronunciation'}" onclick="event.stopPropagation();speak(${safe},'${accent}')">${LANG==='zh'?(accent==='UK'?'英':'美'):accent} ♫</button>`).join('');
+}
+function phoneticMarkup(w){
+  return '<span class="phonetic" data-phonetic-word="'+escapeHTML(w.word)+'">'+['UK','US'].map(a=>(LANG==='zh'?(a==='UK'?'英':'美'):a)+' '+escapeHTML(w['phonetic'+a]||(LANG==='zh'?'暂缺':'unavailable'))).join(' · ')+'</span>';
 }
 
 /* ---------- recognition ---------- */
@@ -1823,7 +1842,7 @@ function loadRecognitionQuestion(){
   else options=buildDefinitionOptions(id);
   state.current={id,options,answered:false,selected:null,correct:null};
   state.locked=false;state.screen='question';
-  recordWordEncounter(id);
+
 }
 function renderQuestionScreen(){
   const w=state.words[state.current.id];
@@ -1842,12 +1861,12 @@ function renderQuestionScreen(){
     speak(w.word);
     prompt=`<div class="dictBox"><button type="button" class="speaker" title="Play pronunciation" onclick="speak('${safeJSString(w.word)}')"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4"></path><path d="M16 9.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"></path><path d="M18.5 7c1.7 1.4 2.5 3 2.5 5s-.8 3.6-2.5 5"></path></svg></button><div class="spellingHint">Listen carefully, then choose the word you hear.</div></div>`;
   }else if(isSynonym||isAntonym){
-    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div><div class="hint" style="margin:-2px 0 14px">${isSynonym?'Choose the closest synonym.':'Choose the closest antonym.'}</div>`;
+    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}${phoneticMarkup(w)}</div><div class="hint" style="margin:-2px 0 14px">${isSynonym?'Choose the closest synonym.':'Choose the closest antonym.'}</div>`;
   }else if(isFillBlank){
     prompt=`<div class="wordRow"><div class="definition" style="font-size:21px;line-height:1.65">${escapeHTML(getBlankSentence(w))}</div></div><div class="hint" style="margin:-2px 0 14px">Choose the word that best completes the sentence.</div>`;
   }else{
     speak(w.word);
-    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}</div>`;
+    prompt=`<div class="wordRow"><div class="word">${escapeHTML(w.word)}</div>${speakerBtn(w.word)}${phoneticMarkup(w)}</div>`;
   }
   return `<section class="quiz">
     <div class="mode">${escapeHTML(getPracticeModeLabel(mode))} ${roundNote}</div>
@@ -1880,7 +1899,7 @@ function renderDetailScreen(){
   const examples=w.examples&&w.examples.length?w.examples:(w.example?[w.example]:[]);
   return `<section class="detail">
     ${banner}
-    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:31px">${escapeHTML(w.word)}</div><div class="wordMeta"><span class="phonetic">${w.phonetic?escapeHTML(w.phonetic):'No phonetic transcription available.'}</span>${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div></div></div>
+    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:31px">${escapeHTML(w.word)}</div><div class="wordMeta">${phoneticMarkup(w)}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div></div></div>
     ${renderFamiliarity(w.word)}
     <div class="block"><h3>${t('definitionHeader')}</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
     ${examples.length?`<div class="block"><h3>${t('examplesHeader')}</h3><div class="examples">${examples.slice(0,3).map(x=>`<div class="example">${escapeHTML(x)}</div>`).join('')}</div></div>`:''}
@@ -1960,7 +1979,7 @@ function loadDictQuestion(){
   state.current={id,checked:false,correct:null,inputVal:''};
   state.locked=false;
   state.screen='dictQuestion';
-  recordWordEncounter(id);
+
 }
 function renderDictQuestionScreen(){
   if(!state.current||!state.words[state.current.id]){
@@ -2037,7 +2056,7 @@ function renderDictFeedbackScreen(){
   const w=state.words[state.current.id],correct=state.current.correct;
   const banner=correct?`<div class="banner good">Well spelled.</div>`:`<div class="banner bad">Not yet. The word returns to the end of the queue.</div>`;
   return `<section class="detail">${banner}
-    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:30px">${escapeHTML(w.word)}</div>${w.phonetic||w.cefr?`<div class="wordMeta">${w.phonetic?`<span class="phonetic">${escapeHTML(w.phonetic)}</span>`:''}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div>`:''}</div></div>
+    <div class="wordRow">${speakerBtn(w.word)}<div><div class="word" style="font-size:30px">${escapeHTML(w.word)}</div>${true?`<div class="wordMeta">${phoneticMarkup(w)}${w.cefr?`<span class="cefr">${escapeHTML(w.cefr)}</span>`:''}</div>`:''}</div></div>
     ${renderFamiliarity(w.word)}
     <div class="block"><h3>Your Spelling</h3><div class="definition" style="color:${correct?'var(--good)':'var(--bad)'}">${escapeHTML(state.current.inputVal)}</div></div>
     <div class="block"><h3>Definition</h3>${w.partOfSpeech?`<div class="partOfSpeech">${escapeHTML(w.partOfSpeech)}</div>`:''}<div class="definition">${escapeHTML(w.definition)}</div></div>
@@ -2207,6 +2226,7 @@ function renderCabinet(){
     const active=state&&state.libraryId===lib.id;
     return `<div class="cabinetItem">
       <div class="cabinetHead"><div><div class="cabinetName">${escapeHTML(lib.name)}${active?' <span class="cefr">In Study</span>':''}</div><div class="cabinetMeta">${lib.words.length} words · ${p.percent}% · ${escapeHTML(p.status)}</div></div></div>
+      <progress class="libraryProgress" max="100" value="${p.percent}" aria-label="${LANG==='zh'?'学习进度':'Learning progress'}">${p.percent}%</progress>
       <div class="cabinetActions">
         <button onclick="openCabinetLibrary('${lib.id}')">Study</button>
         <button class="secondary" onclick="showCabinetDetail('${lib.id}')">View</button>
@@ -2279,18 +2299,18 @@ function renderRecommendedLibraries(){
   const el=document.getElementById('recommendedContent');if(!el)return;
   if(!recommendedLibraries.length){el.innerHTML=`<div class="emptyState">${LANG==='zh'?'书架暂时空置。':'The shelf is empty.'}</div>`;return;}
   el.innerHTML=`<div class="bookshelf">${recommendedLibraries.map(lib=>`<article class="bookCard">
-    <div class="bookCover"><span>${escapeHTML(lib.name)}</span></div>
+    <div class="bookCover">${lib.coverImage?`<img src="${escapeHTML(lib.coverImage)}" alt="${escapeHTML(lib.name)}" loading="lazy">`:`<span>${escapeHTML(lib.name)}</span>`}</div>
     <div class="bookMeta"><div class="bookName">${escapeHTML(lib.name)}</div><div class="bookDesc">${escapeHTML(lib.description||'')}</div><div class="bookCount">${Number(lib.words?.length||0)} ${LANG==='zh'?'词':'WORDS'}</div>
-      <div class="bookActions"><button type="button" onclick="downloadRecommendedLibrary('${escapeHTML(lib.id)}')">${LANG==='zh'?'收入词库':'Add to Cabinet'}</button>${siteStatus.isAdmin?`<button class="ghost" type="button" onclick="deleteRecommendedLibrary('${escapeHTML(lib.id)}')">${LANG==='zh'?'撤下':'Remove'}</button>`:''}</div>
+      <div class="bookActions"><button type="button" onclick="downloadRecommendedLibrary('${escapeHTML(lib.id)}')" ${getCabinet().some(x=>String(x.sourceRecommendedId)===String(lib.id))?'disabled':''}>${getCabinet().some(x=>String(x.sourceRecommendedId)===String(lib.id))?(LANG==='zh'?'已添加':'Added'):(LANG==='zh'?'添加到词库':'Add to Cabinet')}</button>${siteStatus.isAdmin?`<label class="coverUpload">${LANG==='zh'?'更换封面':'Change cover'}<input type="file" accept="image/png,image/jpeg,image/webp" onchange="updateRecommendedCover('${escapeHTML(lib.id)}',this)"></label><button class="ghost" type="button" onclick="deleteRecommendedLibrary('${escapeHTML(lib.id)}')">${LANG==='zh'?'撤下':'Remove'}</button>`:''}</div>
     </div></article>`).join('')}</div>`;
 }
 function downloadRecommendedLibrary(id){
   const src=recommendedLibraries.find(x=>String(x.id)===String(id));if(!src)return;
   const cabinet=getCabinet();
-  const existing=cabinet.find(x=>x.sourceRecommendedId===src.id);
+  const existing=cabinet.find(x=>String(x.sourceRecommendedId)===String(src.id));
   if(existing){showToast(LANG==='zh'?'这部词书已经收入词库。':'This volume is already in your Cabinet.');return;}
   const lib={id:'recommended_'+src.id+'_'+Date.now(),name:String(src.name||'Recommended Volume'),description:String(src.description||''),words:(Array.isArray(src.words)?src.words:[]).map(normalizeWordRecord),progress:null,updatedAt:new Date().toISOString(),sourceRecommendedId:src.id,lockedRename:true};
-  setCabinet([...cabinet,lib]);renderCabinet();showToast(LANG==='zh'?'词书已收入词库。':'Volume added to your Cabinet.');
+  setCabinet([...cabinet,lib]);renderCabinet();renderRecommendedLibraries();showToast(LANG==='zh'?'词书已收入词库。':'Volume added to your Cabinet.');
 }
 async function uploadRecommendedLibrary(){
   const name=(document.getElementById('recommendedNameInput')?.value||'').trim();
@@ -2303,9 +2323,10 @@ async function uploadRecommendedLibrary(){
     if(/\.json$/i.test(file.name)){const parsed=JSON.parse(text);words=Array.isArray(parsed)?parsed:(Array.isArray(parsed.words)?parsed.words:[]);}else{words=parseCSV(text);}
     words=words.map(normalizeWordRecord).filter(x=>x.word&&x.definition);
     if(!words.length)throw new Error(LANG==='zh'?'文件中没有可用词汇。':'No usable words were found.');
-    const r=await fetch('/api/admin/recommended-libraries',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({name,description,words})});
+    const coverImage=await readCoverImage(document.getElementById('recommendedCoverInput').files?.[0]);
+    const r=await fetch('/api/admin/recommended-libraries',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({name,description,words,coverImage})});
     const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Upload failed.');
-    document.getElementById('recommendedNameInput').value='';document.getElementById('recommendedDescInput').value='';document.getElementById('recommendedFileInput').value='';
+    document.getElementById('recommendedCoverInput').value='';document.getElementById('recommendedNameInput').value='';document.getElementById('recommendedDescInput').value='';document.getElementById('recommendedFileInput').value='';
     if(status)status.textContent=LANG==='zh'?'已上架。':'Published.';await loadRecommendedLibraries();
   }catch(e){if(status)status.textContent=e.message||'Upload failed.';}
 }
@@ -2318,20 +2339,20 @@ async function deleteRecommendedLibrary(id){
 function openProgressPage(){closeAllLayers();renderProgressPage();openLayer('progressPopover');}
 function renderProgressPage(){
   const el=document.getElementById('progressContent');if(!el)return;flushStudyTime();
-  const wordsEncountered=new Set(Object.keys(globalStats.wordStats||{})).size;
+  const wordsEncountered=studiedWordKeys(globalStats).size;
   const learned=(globalStats.learnedWords||[]).length;
   const spelled=(globalStats.spelledWords||[]).length;
   const mistakes=Number(globalStats.mistakes||0);
   const days=Object.entries(globalStats.dailyWords||{}).filter(([,v])=>Array.isArray(v)&&v.length).sort((a,b)=>a[0].localeCompare(b[0]));
-  const recent=days.slice(-14);
-  const max=Math.max(1,...recent.map(([,v])=>Array.isArray(v)?v.length:0));
-  const activity=recent.map(([k,v])=>`<div class="activityBar" title="${escapeHTML(formatDate(k))} · ${v.length} words" style="height:${Math.max(5,Math.round(v.length/max*108))}px"><span>${escapeHTML(k.slice(5))}</span></div>`).join('');
+  const recent=recentActivityDays(globalStats);
+  const max=Math.max(1,...recent.map(([,v])=>Number(v)||0));
+  const activity=recent.map(([k,v])=>`<div class="activityBar" title="${escapeHTML(formatDate(k))} · ${v} ${LANG==='zh'?'次练习':'answers'}" style="height:${(v?Math.max(5,Math.round(v/max*108)):2)}px"><span>${escapeHTML(k.slice(5))}</span></div>`).join('');
   const practised=getRanking('practised',8),missed=getRanking('mistakes',8);
   const row=(x,label)=>`<div class="progressRow"><span class="wordName">${escapeHTML(x.word)}</span><span class="wordStat">${x[label]||0}</span></div>`;
-  el.innerHTML=`<div class="progressPage"><div class="progressHero"><div><h3>${LANG==='zh'?'我的学习进度':'My Progress'}</h3><p>${LANG==='zh'?'你的学习轨迹与词汇掌握情况。':'A record of your vocabulary journey and learning activity.'}</p></div><div class="progressPeriod">${LANG==='zh'?'学习档案':'LEARNING RECORD'}</div></div>
+  el.innerHTML=`<div class="progressPage"><div class="progressHero"><div><h3>${LANG==='zh'?'我的学习进度':'My Progress'}</h3><p>${LANG==='zh'?'查看学习记录和词汇掌握情况。':'A record of your vocabulary journey and learning activity.'}</p></div><div class="progressPeriod">${LANG==='zh'?'学习档案':'LEARNING RECORD'}</div></div>
   <div class="progressCards"><div class="progressCard"><div class="value">${wordsEncountered}</div><div class="label">${t('wordsEncountered')}</div></div><div class="progressCard"><div class="value">${learned}</div><div class="label">${t('learned')}</div></div><div class="progressCard"><div class="value">${spelled}</div><div class="label">${t('spelled')}</div></div><div class="progressCard"><div class="value">${mistakes}</div><div class="label">${t('mistakes')}</div></div></div>
   <div class="progressSection"><h4>${LANG==='zh'?'近十四日学习活动':'Activity · Last 14 Days'}</h4><div class="activityChart">${activity||`<div class="progressEmpty">${LANG==='zh'?'尚无学习活动。':'No study activity recorded yet.'}</div>`}</div></div>
-  <div class="progressLists"><div class="progressSection"><h4>${LANG==='zh'?'最常学习':'Most Practised'}</h4><div class="progressList">${practised.length?practised.map(x=>row(x,'practised')).join(''):`<div class="progressEmpty">${t('noPractice')}</div>`}</div></div><div class="progressSection"><h4>${LANG==='zh'?'最易出错':'Most Missed'}</h4><div class="progressList">${missed.length?missed.map(x=>row(x,'mistakes')).join(''):`<div class="progressEmpty">${t('noMistakes')}</div>`}</div></div></div></div>`;
+  </div>`;
 }
 
 /* ---------- Gamepad navigation ---------- */
@@ -2396,7 +2417,7 @@ function getRanking(type,limit=10){
 function renderRanking(items,label){if(!items.length)return `<div class="profileNote">No ${label.toLowerCase()} recorded yet.</div>`;return `<div class="ranking">${items.map((x,i)=>`<div class="rankRow"><div class="rankNo">No. ${i+1}</div><div class="rankWord">${escapeHTML(x.word)}</div><div class="rankCount">${label==='Practice count'?x.practised+' '+(x.practised===1?'time':'times'):x.mistakes+' '+(x.mistakes===1?'mistake':'mistakes')}</div></div>`).join('')}</div>`;}
 function renderProfile(){
   flushStudyTime();
-  const practised=getRanking('practised',10),missed=getRanking('mistakes',10),allWords=new Set(Object.keys(globalStats.wordStats||{})),learned=new Set(globalStats.learnedWords||[]),spelled=new Set(globalStats.spelledWords||[]);
+  const practised=getRanking('practised',10),missed=getRanking('mistakes',10),allWords=studiedWordKeys(globalStats),learned=new Set(globalStats.learnedWords||[]),spelled=new Set(globalStats.spelledWords||[]);
   const studyDays=new Set(Object.keys(globalStats.dailyWords||{}).filter(k=>Array.isArray(globalStats.dailyWords[k])&&globalStats.dailyWords[k].length));
   let currentStreak=0;const cursor=new Date();cursor.setHours(12,0,0,0);while(true){const k=dateKey(cursor);if(!studyDays.has(k))break;currentStreak++;cursor.setDate(cursor.getDate()-1);}
   const bestDay=Object.entries(globalStats.daily||{}).sort((a,b)=>Number(b[1])-Number(a[1]))[0];
@@ -2405,17 +2426,14 @@ function renderProfile(){
   const questions=Number(globalStats.questionCount||0);
   const hours=(Number(globalStats.studySeconds||0)/3600).toFixed(1);
   const days=Object.entries(globalStats.dailyWords||{}).filter(([,v])=>Array.isArray(v)&&v.length).sort((a,b)=>a[0].localeCompare(b[0]));
-  const recent=days.slice(-14);
-  const max=Math.max(1,...recent.map(([,v])=>Array.isArray(v)?v.length:0));
-  const activity=recent.map(([k,v])=>`<div class="activityBar" title="${escapeHTML(formatDate(k))} · ${v.length} words" style="height:${Math.max(5,Math.round(v.length/max*108))}px"><span>${escapeHTML(k.slice(5))}</span></div>`).join('');
-  return `<div class="profileSummary">${LANG==='zh'?'你的完整学习档案：统计、活动、年鉴与今日排行。':'Your complete learning record: statistics, activity, the almanac, and today’s ranking.'}</div>
+  const recent=recentActivityDays(globalStats);
+  const max=Math.max(1,...recent.map(([,v])=>Number(v)||0));
+  const activity=recent.map(([k,v])=>`<div class="activityBar" title="${escapeHTML(formatDate(k))} · ${v} ${LANG==='zh'?'次练习':'answers'}" style="height:${(v?Math.max(5,Math.round(v/max*108)):2)}px"><span>${escapeHTML(k.slice(5))}</span></div>`).join('');
+  return `<div class="profileSummary">${LANG==='zh'?'查看学习统计、近期活动和今日排行。':'Your learning statistics, recent activity, and today’s ranking.'}</div>
   <div class="profileNameSection"><label class="profileNameLabel" for="profileUsername">${LANG==='zh'?'用户名':'Username'}</label><div class="profileNameRow"><input id="profileUsername" class="profileNameInput" type="text" maxlength="24" value="${escapeHTML(username)}" placeholder="${LANG==='zh'?'请输入用户名':'Choose a username'}" ${hasUsername?'disabled':''}><button id="profileNameButton" class="profileNameButton" type="button" onclick="${hasUsername?'editUsername()':'saveUsername()'}">${hasUsername?(LANG==='zh'?'编辑':'Edit'):(LANG==='zh'?'保存用户名':'Save Username')}</button></div><div id="profileNameStatus" class="profileNameStatus"></div></div>
   <div class="profileGrid profileGrid8"><div class="profileStat"><div class="value">${allWords.size}</div><div class="name">${t('wordsEncountered')}</div></div><div class="profileStat"><div class="value">${learned.size}</div><div class="name">${t('learned')}</div></div><div class="profileStat"><div class="value">${spelled.size}</div><div class="name">${t('spelled')}</div></div><div class="profileStat"><div class="value">${globalStats.mistakes||0}</div><div class="name">${t('mistakes')}</div></div><div class="profileStat"><div class="value">${studyDays.size}</div><div class="name">${LANG==='zh'?'学习日数':'Study Days'}</div></div><div class="profileStat"><div class="value">${currentStreak}</div><div class="name">${LANG==='zh'?'当前连续学习':'Current Streak'}</div></div><div class="profileStat"><div class="value">${questions}</div><div class="name">${LANG==='zh'?'已答题数':'Questions Answered'}</div></div><div class="profileStat"><div class="value">${hours}h</div><div class="name">${LANG==='zh'?'学习时长':'Time Studied'}</div></div></div>
   <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'近十四日学习活动':'Activity · Last 14 Days'}</div><div class="activityChart">${activity||`<div class="progressEmpty">${LANG==='zh'?'尚无学习活动。':'No study activity recorded yet.'}</div>`}</div></div>
-  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'最常学习 · 前十':'Most Practised · Top 10'}</div>${renderRanking(practised,'Practice count')}</div>
-  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'最易错误 · 前十':'Most Missed · Top 10'}</div>${renderRanking(missed,'Mistake count')}</div>
   ${bestDay?`<div class="profileNote">${LANG==='zh'?'学习最佳日':'Best study day'} · ${escapeHTML(formatDate(bestDay[0]))} · ${Number(bestDay[1])} ${LANG==='zh'?'词':'words studied'}.</div>`:''}
-  <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'年鉴':'The Almanac'}</div>${renderAlmanac()}</div>
   <div class="rankingSection"><div class="rankingTitle">${LANG==='zh'?'今日排行':'Today’s Ranking'}</div><div id="profileDailyRanking" class="profileLoading">${LANG==='zh'?'正在载入……':'Loading ranking…'}</div></div>`;
 }
 function editUsername(){
@@ -2748,6 +2766,7 @@ async function syncAccountDataNow(){
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       credentials:'include',
+      keepalive:true,
       body:JSON.stringify(payload)
     });
     const data=await r.json().catch(()=>({}));
@@ -2771,7 +2790,7 @@ async function syncAccountDataNow(){
     if(syncPending||requestRevision!==syncRevision||hasUnsyncedLocalChanges){
       syncPending=false;
       clearTimeout(syncTimer);
-      syncTimer=setTimeout(()=>{syncAccountDataNow();},60);
+      syncTimer=setTimeout(()=>{syncAccountDataNow();},3000);
     }
   }
 }
@@ -2892,7 +2911,7 @@ async function saveEditedLibrary(){
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllLayers();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)flushStudyTime();else if(state)touchStudyTime();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){flushStudyTime();studyClockStartedAt=0;if(accountMode==='account')syncAccountDataNow();}});
 window.addEventListener('pagehide',flushStudyTime);
 renderAccountBar();
 closeAllLayers();
@@ -2984,7 +3003,7 @@ html.lang-zh .profileNote{
     "Synonym Choice":"同义词辨析",
     "Antonym Choice":"反义词辨析",
     "Fill in the Blank":"完形填空",
-    "Spelling Practice":"拼写研习",
+    "Spelling Practice":"拼写学习",
     "Read the word and choose its meaning.":"阅读单词，并选出相应释义。",
     "Read the definition and choose the word.":"阅读释义，并选出相应单词。",
     "Listen to the pronunciation and choose the word.":"选出听到的单词。",
@@ -3043,7 +3062,7 @@ html.lang-zh .profileNote{
     "Choose a new password for your account.":"请为账户设置新的密码。",
     "Set new password":"设置新密码",
     "Guest mode keeps your data only in this browser.":"访客模式仅将数据保存在当前浏览器中。",
-    "Your word libraries, learning progress, and study records will stay on this browser only. If you change browser, device, or clear this browser's storage, your guest data will not follow you.":"你的词库、学习进度与研习记录仅保存在当前浏览器中。更换浏览器或设备，或清除浏览器存储后，访客数据将无法随之迁移。",
+    "Your word libraries, learning progress, and study records will stay on this browser only. If you change browser, device, or clear this browser's storage, your guest data will not follow you.":"你的词库、学习进度与学习记录仅保存在当前浏览器中。更换浏览器或设备，或清除浏览器存储后，访客数据将无法随之迁移。",
     "Confirm Guest Mode":"确认以访客身份继续",
     "Remember this device?":"记住此设备？",
     "If you choose Yes, this browser will keep you signed in on this device.":"若选择“是”，此浏览器将在此设备上保持登录状态。",

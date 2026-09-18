@@ -7,7 +7,11 @@ const { Pool } = require('pg');
 const pgSession = require('connect-pg-simple')(session);
 
 const { validateGeneration, selectTopicWords, alignVocabulary } = require('./vocabulary');
+const { recordStudyEvents } = require('./study-events');
+const { validateCoverImage } = require('./covers');
+const { registerPronunciationRoutes } = require('./pronunciation');
 const app = express();
+registerPronunciationRoutes(app);
 
 app.set('trust proxy', 1);
 
@@ -40,7 +44,7 @@ const REGISTER_TTL = 15;
 // Middleware
 // ============================================================
 
-app.use(express.json({ limit: '500kb' }));
+app.use(express.json({ limit: '10mb' }));
 
 const secureCookie =
   process.env.NODE_ENV === 'production' ||
@@ -1874,277 +1878,6 @@ app.get(
 // DAILY EMAIL ACTIVITY LOGGING
 // ============================================================
 
-async function recordStudyEvents(
-  client,
-  userId,
-  oldStats,
-  newStats,
-  hadPreviousSnapshot
-) {
-  if (!hadPreviousSnapshot) {
-    return;
-  }
-
-  const oldData =
-    oldStats && typeof oldStats === 'object'
-      ? oldStats
-      : {};
-
-  const newData =
-    newStats && typeof newStats === 'object'
-      ? newStats
-      : {};
-
-  const oldWordStats =
-    oldData.wordStats && typeof oldData.wordStats === 'object'
-      ? oldData.wordStats
-      : {};
-
-  const newWordStats =
-    newData.wordStats && typeof newData.wordStats === 'object'
-      ? newData.wordStats
-      : {};
-
-  for (const [word, newWord] of Object.entries(newWordStats)) {
-    const oldWord = oldWordStats[word] || {};
-
-    const oldPractised =
-      Number(oldWord.practised || 0);
-
-    const newPractised =
-      Number(newWord?.practised || 0);
-
-    const practiceDelta =
-      Math.max(
-        0,
-        newPractised - oldPractised
-      );
-
-    for (
-      let i = 0;
-      i < practiceDelta;
-      i += 1
-    ) {
-      await client.query(
-        `
-        INSERT INTO study_events(
-          user_id,
-          event_type,
-          word,
-          created_at
-        )
-        VALUES(
-          $1,
-          'practice',
-          $2,
-          NOW()
-        )
-        `,
-        [
-          userId,
-          word
-        ]
-      );
-    }
-
-    const oldMistakes =
-      Number(oldWord.mistakes || 0);
-
-    const newMistakes =
-      Number(newWord?.mistakes || 0);
-
-    const mistakeDelta =
-      Math.max(
-        0,
-        newMistakes - oldMistakes
-      );
-
-    for (
-      let i = 0;
-      i < mistakeDelta;
-      i += 1
-    ) {
-      await client.query(
-        `
-        INSERT INTO study_events(
-          user_id,
-          event_type,
-          word,
-          created_at
-        )
-        VALUES(
-          $1,
-          'mistake',
-          $2,
-          NOW()
-        )
-        `,
-        [
-          userId,
-          word
-        ]
-      );
-    }
-  }
-
-  const oldLearned =
-    new Set(
-      Array.isArray(
-        oldData.learnedWords
-      )
-        ? oldData.learnedWords
-        : []
-    );
-
-  const newLearned =
-    Array.isArray(
-      newData.learnedWords
-    )
-      ? newData.learnedWords
-      : [];
-
-  for (
-    const word of newLearned
-  ) {
-    if (
-      oldLearned.has(word)
-    ) {
-      continue;
-    }
-
-    await client.query(
-      `
-      INSERT INTO study_events(
-        user_id,
-        event_type,
-        word,
-        created_at
-      )
-      VALUES(
-        $1,
-        'learned',
-        $2,
-        NOW()
-      )
-      `,
-      [
-        userId,
-        word
-      ]
-    );
-  }
-
-  const oldSpelled =
-    new Set(
-      Array.isArray(
-        oldData.spelledWords
-      )
-        ? oldData.spelledWords
-        : []
-    );
-
-  const newSpelled =
-    Array.isArray(
-      newData.spelledWords
-    )
-      ? newData.spelledWords
-      : [];
-
-  for (
-    const word of newSpelled
-  ) {
-    if (
-      oldSpelled.has(word)
-    ) {
-      continue;
-    }
-
-    await client.query(
-      `
-      INSERT INTO study_events(
-        user_id,
-        event_type,
-        word,
-        created_at
-      )
-      VALUES(
-        $1,
-        'spelling',
-        $2,
-        NOW()
-      )
-      `,
-      [
-        userId,
-        word
-      ]
-    );
-  }
-
-  const oldDailyMastery =
-    oldData.dailySpellingMastery &&
-    typeof oldData.dailySpellingMastery ===
-      'object'
-      ? oldData.dailySpellingMastery
-      : {};
-
-  const newDailyMastery =
-    newData.dailySpellingMastery &&
-    typeof newData.dailySpellingMastery ===
-      'object'
-      ? newData.dailySpellingMastery
-      : {};
-
-  const today =
-    new Date()
-      .toISOString()
-      .slice(0, 10);
-
-  const oldMastery =
-    Number(
-      oldDailyMastery[today] ||
-        0
-    );
-
-  const newMastery =
-    Number(
-      newDailyMastery[today] ||
-        0
-    );
-
-  const masteryDelta =
-    Math.max(
-      0,
-      newMastery -
-        oldMastery
-    );
-
-  for (
-    let i = 0;
-    i < masteryDelta;
-    i += 1
-  ) {
-    await client.query(
-      `
-      INSERT INTO study_events(
-        user_id,
-        event_type,
-        word,
-        created_at
-      )
-      VALUES(
-        $1,
-        'spelling_mastery',
-        NULL,
-        NOW()
-      )
-      `,
-      [userId]
-    );
-  }
-}
-
-
 // ============================================================
 // DAILY RANKING — SPELLING MASTERY
 // ============================================================
@@ -2286,6 +2019,7 @@ app.put(
         'BEGIN'
       );
 
+      await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[req.session.userId]);
       const previous =
         await client.query(
           `
@@ -2627,6 +2361,8 @@ Return valid JSON only in this exact structure:
       "word": "exact input word",
       "partOfSpeech": "standard English part of speech",
       "phonetic": "IPA pronunciation",
+      "phoneticUK": "British English IPA pronunciation",
+      "phoneticUS": "American English IPA pronunciation",
       "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
       "definition": "clear concise English definition",
       "examples": [
@@ -2644,7 +2380,7 @@ Return valid JSON only in this exact structure:
 
 Preserve the input word exactly.
 Return the most appropriate standard part of speech for the word.
-The "phonetic" field is REQUIRED and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
+The "phoneticUK" and "phoneticUS" fields must contain their respective regional IPA transcriptions. The "phonetic" field is REQUIRED and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
 Return one CEFR level only: A1, A2, B1, B2, C1, or C2.
 Do not include explanations outside the JSON.
 
@@ -2667,6 +2403,8 @@ Return valid JSON only with this structure:
       "word": "exact input",
       "partOfSpeech": "standard English part of speech",
       "phonetic": "IPA pronunciation",
+      "phoneticUK": "British English IPA pronunciation",
+      "phoneticUS": "American English IPA pronunciation",
       "cefr": "CEFR level from A1, A2, B1, B2, C1, C2",
       "definition": "clear concise English definition",
       "examples": [
@@ -2688,7 +2426,7 @@ Preserve spelling exactly.
 
 Never split a word.
 
-The "phonetic" field is REQUIRED for every single entry and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
+The "phoneticUK" and "phoneticUS" fields must contain their respective regional IPA transcriptions. The "phonetic" field is REQUIRED for every single entry and must never be left blank: always return a concise IPA pronunciation in /slashes/, even for uncommon or compound words — give your best accurate transcription rather than omitting it.
 
 Provide exactly three natural useful example sentences.
 
@@ -2815,6 +2553,8 @@ Do not add extra fields.
               ''
           ).trim(),
 
+        phoneticUK:String(item?.phoneticUK||'').trim(),
+        phoneticUS:String(item?.phoneticUS||'').trim(),
         phonetic:
           String(
             item?.phonetic ||
@@ -3551,6 +3291,19 @@ app.get(
 );
 
 
+app.put('/api/admin/recommended-libraries/:id/cover',requireAdmin,async(req,res)=>{
+  if(!requireDB(res))return;
+  let coverImage;
+  try{coverImage=validateCoverImage(req.body.coverImage);}catch(error){return res.status(400).json({error:error.message});}
+  try{
+    const libraries=await getRecommendedLibraries();
+    const library=libraries.find(x=>String(x.id)===req.params.id);
+    if(!library)return res.status(404).json({error:'Library not found.'});
+    library.coverImage=coverImage;library.updatedAt=new Date().toISOString();
+    await saveRecommendedLibraries(libraries);res.json({library});
+  }catch{res.status(500).json({error:'Unable to save cover image.'});}
+});
+
 // Admin: publish a new volume.
 
 app.post(
@@ -3573,6 +3326,7 @@ app.post(
           ''
       ).trim();
 
+    try{validateCoverImage(req.body.coverImage);}catch(error){return res.status(400).json({error:error.message});}
     const incomingWords =
       Array.isArray(
         req.body?.words
@@ -3643,6 +3397,7 @@ app.post(
           ),
 
         words,
+        coverImage:validateCoverImage(req.body.coverImage),
 
         createdAt:
           new Date()

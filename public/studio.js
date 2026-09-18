@@ -17,7 +17,9 @@ async function readCSVFile(input){
 function openCabinetSearch(){goToStudio();const input=document.getElementById('librarySearch');input.classList.remove('hidden');input.focus();}
 function dashboardSummary(stats,now=new Date()){
   const activity={...stats.daily};
-  for(const [day,words] of Object.entries(stats.dailyWordPractice||{}))activity[day]=Math.max(Number(activity[day])||0,Object.values(words).reduce((a,b)=>a+(Number(b)||0),0));
+  // New counters track submitted answers. Legacy learned-day records remain readable.
+  const practice=stats.statsVersion>=2?stats.dailyAnswers:stats.dailyWordPractice;
+  for(const [day,words] of Object.entries(practice||{}))activity[day]=Math.max(Number(activity[day])||0,Object.values(words).reduce((a,b)=>a+(Number(b)||0),0));
   let streak=0,cursor=new Date(now);cursor.setHours(12,0,0,0);
   if(!(activity[dateKey(cursor)]>0))cursor.setDate(cursor.getDate()-1);
   while(activity[dateKey(cursor)]>0){streak++;cursor.setDate(cursor.getDate()-1);}
@@ -45,5 +47,5 @@ function renderDashboard(){
   const heatmap=document.getElementById('dashboardHeatmap');heatmap.replaceChildren();
   const start=new Date();start.setHours(12,0,0,0);start.setDate(start.getDate()-83);
   for(let i=0;i<84;i++){const day=new Date(start);day.setDate(start.getDate()+i);const key=dateKey(day),count=Number(summary.activity[key])||0;const cell=document.createElement('span');cell.className='activityCell';cell.dataset.level=count===0?'0':String(Math.min(4,Math.ceil(count/3)));cell.title=key+' · '+count+' study activities';cell.setAttribute('aria-label',cell.title);heatmap.append(cell);}
-  document.getElementById('studioDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('studioDate').textContent=new Date().toLocaleDateString(LANG==='zh'?'zh-CN':'en-US',{weekday:'long',month:'long',day:'numeric'});
 }
